@@ -14,8 +14,8 @@ class PostForm(forms.ModelForm):
         fields = [
             "title",
             "text",
-            "pub_date",
-            "is_published",
+            "pub_date", # Поле pub_date включено для редактирования
+            "is_published", # Поле также включено для редактирования
             "location",
             "category",
             "image",

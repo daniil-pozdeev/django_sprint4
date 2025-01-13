@@ -5,6 +5,7 @@ from django.utils import timezone
 from blog.models import Post
 
 
+#фильрация постов
 def get_post_query_set(author=None, category=None):
     if author:
         kwargs = {"author": author}
@@ -25,6 +26,7 @@ def get_post_query_set(author=None, category=None):
             comment_count=Count("comments")).order_by("-pub_date")
 
 
+#вычисление страницы пагинатора
 def get_paginated_page(queryset, page_number, items_per_page):
     """
     Возвращает объект страницы для queryset.
