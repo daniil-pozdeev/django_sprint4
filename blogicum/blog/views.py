@@ -1,5 +1,6 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, render
+from django.http import Http404
 from django.urls import reverse, reverse_lazy
 from django.views.generic import (CreateView, DeleteView, DetailView, ListView,
                                   UpdateView)
@@ -9,6 +10,15 @@ from blog.forms import CommentForm, PostForm, UserUpdateForm
 from blog.helpers import get_post_query_set
 from blog.mixins import CommentUpdateDeleteMixin, PostUpdateDeleteMixin
 from blog.models import Category, Comment, Post, User
+from blog.helpers import get_paginated_page
+
+
+def custom_post_list(request):
+    queryset = Post.objects.filter(is_published=True).order_by("-pub_date")
+    page_number = request.GET.get("page")
+    page = get_paginated_page(queryset, page_number, items_per_page=10)
+
+    return render(request, "blog/custom_list.html", {"page": page})
 
 
 class PostListView(ListView):
@@ -43,24 +53,24 @@ class PostDetailView(DetailView):
 
     model = Post
     template_name = "blog/detail.html"
+    pk_url_kwarg = "post_id"
 
     def get_object(self, queryset=None):
         post = super().get_object()
 
-        if not post.author == self.request.user:
-            post = get_object_or_404(
-                get_post_query_set(),
-                id=self.kwargs["pk"]
-            )
+        if not post.is_published:
+            if (
+                not self.request.user.is_authenticated
+                or post.author != self.request.user
+            ):
+                raise Http404("Публикация не найдена")
 
         return post
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["form"] = CommentForm()
-        context["comments"] = (
-            self.object.comments.select_related("author")
-        )
+        context["comments"] = self.object.comments.select_related("author")
         return context
 
 
@@ -68,7 +78,7 @@ class PostUpdateView(LoginRequiredMixin, PostUpdateDeleteMixin, UpdateView):
     """Update a post."""
 
     model = Post
-    pk_url_kwargs = "pk"
+    pk_url_kwarg = "post_id"
     form_class = PostForm
     template_name = "blog/create.html"
 
@@ -80,7 +90,7 @@ class PostDeleteView(LoginRequiredMixin, PostUpdateDeleteMixin, DeleteView):
     """Delete a post."""
 
     model = Post
-    pk_url_kwargs = "pk"
+    pk_url_kwarg = "post_id"
     template_name = "blog/create.html"
 
     def get_context_data(self, **kwargs):
@@ -161,12 +171,13 @@ class CommentCreateView(LoginRequiredMixin, CreateView):
     model = Comment
     form_class = CommentForm
     template_name = "blog/comment.html"
+    pk_url_kwarg = "post_id"
 
     def form_valid(self, form):
         form.instance.author = self.request.user
         form.instance.post = get_object_or_404(
             Post,
-            pk=self.kwargs["pk"]
+            pk=self.kwargs["post_id"]
         )
         return super().form_valid(form)
 

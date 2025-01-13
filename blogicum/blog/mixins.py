@@ -20,6 +20,7 @@ class CommentUpdateDeleteMixin:
     model = Comment
     form_class = CommentForm
     template_name = "blog/comment.html"
+    pk_url_kwarg = "comment_id"
 
     def dispatch(self, request, *args, **kwargs):
         if self.get_object().author != request.user:
