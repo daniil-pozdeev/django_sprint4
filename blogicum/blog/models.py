@@ -9,7 +9,6 @@ User = get_user_model()
 
 
 class Category(PublishedAndCreatedModel):
-    """Defines a post category, inheriting publication and creation fields."""
 
     title = models.CharField(
         max_length=LEN_TEXT_FILD,

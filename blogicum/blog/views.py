@@ -55,6 +55,7 @@ class PostDetailView(DetailView):
     template_name = "blog/detail.html"
     pk_url_kwarg = "post_id"
 
+    #отказ в показе неопубликованного не авторам
     def get_object(self, queryset=None):
         post = super().get_object()
 
